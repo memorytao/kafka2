@@ -1,4 +1,4 @@
-package com.kafka.config;
+package com.kafka.app.config;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -9,40 +9,39 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 
-@EnableKafka
 @Configuration
-public class KafkaConsumeConfig {
+@EnableKafka
+public class KafkaConsumerConfig {
 
-    @Value("${spring.kafka.bootstrap-servers}")
-    String bootstrapAddress;
+    @Value("${spring.kafka.consumer.bootstrap-servers}")
+    private String host;
 
     @Bean
     public ConsumerFactory<String, String> consumerFactory() {
-        Map<String, Object> props = new HashMap<>();
-        props.put(
-                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapAddress);
-        props.put(
-                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        props.put(
-                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        Map<String, Object> props = initConsumer();
         return new DefaultKafkaConsumerFactory<>(props);
+    }
+
+    public Map<String, Object> initConsumer() {
+
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, host);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
+        return props;
     }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory() {
-
         ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         return factory;
-    }
-
-    @KafkaListener(topics = "memorytao", groupId = "groupId")
-    public void listener(String message) {
-        System.out.println("Received Message in group foo: " + message);
     }
 }
